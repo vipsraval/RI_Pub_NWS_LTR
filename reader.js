@@ -10,7 +10,7 @@
    $("token").value=""; $("stories").replaceChildren(); $("tasks").replaceChildren();
    $("archive").replaceChildren(new Option("Latest edition","latest.json"));
    $("paper").hidden=true; $("signin").hidden=false; $("lock").hidden=true; $("refresh").hidden=true;
-   $("open").disabled=false; $("refresh").disabled=false; $("archive").disabled=false;
+   $("open").textContent="Open my edition ↗"; $("open").disabled=false; $("refresh").disabled=false; $("archive").disabled=false;
    $("edition-date").textContent="Your private reading room"; $("edition-label").textContent=""; $("status").textContent=message;
  }
  function touch(){ clearTimeout(idleTimer); if(token) idleTimer=setTimeout(()=>lock("Reader locked after 15 minutes without activity."),15*60*1000); }
@@ -45,7 +45,7 @@
  }
  async function load(path="latest.json"){
    const ticket=++generation; if(controller) controller.abort(); controller=new AbortController(); const currentController=controller; const signal=currentController.signal;
-   $("open").disabled=true;$("refresh").disabled=true;$("archive").disabled=true;$("lock").hidden=false;
+   $("open").textContent="Opening…"; $("open").disabled=true;$("refresh").disabled=true;$("archive").disabled=true;$("lock").hidden=false;
    $("status").textContent="Opening your private edition…";
    const timeout=setTimeout(()=>currentController.abort(),30000);
    try{
@@ -57,9 +57,10 @@
    }catch(error){if(ticket===generation)lock(error.name==="AbortError"?"Connection timed out. Please try again.":error instanceof TypeError?"Could not connect to GitHub. Check your internet connection.":error instanceof SyntaxError?"A content file contains invalid JSON.":error.message);}
    finally{clearTimeout(timeout);if(ticket===generation){$("open").disabled=false;$("refresh").disabled=false;$("archive").disabled=false;}}
  }
- $("login-form").addEventListener("submit",e=>{e.preventDefault();token=$("token").value.trim();$("token").value="";if(!token)return;load();});
+ $("login-form").addEventListener("submit",e=>{e.preventDefault();token=$("token").value.trim();$("token").value="";if(!token){$("status").textContent="Paste your read-only token first.";return;}load();});
  $("lock").addEventListener("click",()=>lock());$("refresh").addEventListener("click",()=>load($("archive").value));$("archive").addEventListener("change",()=>load($("archive").value));
  for(const event of ["pointerdown","keydown","scroll"]) document.addEventListener(event,touch,{passive:true});
  window.addEventListener("pagehide",()=>lock());window.addEventListener("pageshow",e=>{if(e.persisted)lock();});
  document.addEventListener("visibilitychange",()=>{if(document.hidden&&token)lock("Reader locked while away. Unlock to continue reading.");});
+ $("open").disabled=false; $("status").textContent="Ready. Enter your read-only token to open your edition.";
 })();
