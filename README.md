@@ -1,31 +1,17 @@
-# THE VIPUL DAILY — public reader
+# Raval Intelligent — public shell
 
-Only the static reader shell lives here. Never commit edition data, tasks, archives, tokens, private screenshots or secrets to this repository.
+Public files contain only the sign-in and reading application. All article text, catalogs and private publication metadata live in vipsraval/RI_PRV_NWS_LTR. Never commit private content, test fixtures, screenshots of private articles, tokens or client secrets here.
 
-## Publish on GitHub Pages
+GitHub Pages: main / root. No build or external dependencies. index.html loads app.js and site.css. Earlier reader.js/style.css may remain in history but are not used by this version.
 
-Open Settings → Pages → Build and deployment → Deploy from a branch → main → /(root) → Save. Enable HTTPS. Expected URL: https://vipsraval.github.io/RI_Pub_NWS_LTR/ . Never enable Pages for the private content repository. No build, Actions workflow, external libraries or secret configuration is required.
+## Access
 
-## Manual access on iPad Safari
+Create a fine-grained GitHub token selecting only RI_PRV_NWS_LTR with Contents: Read-only. Enter it on the HTTPS reader on your own device. No credentials are written to URLs, logs or browser storage. This is manual token access, not OAuth. No service worker or offline cache is used. All content API requests use no-store, omit cookies, reject redirects and target a fixed GitHub API repository.
 
-Create a fine-grained personal access token at https://github.com/settings/personal-access-tokens/new with a short expiry, resource owner vipsraval, only RI_PRV_NWS_LTR selected, and Contents: Read-only. Metadata read access is automatic. Do not use a classic token or grant write permission. Paste it only into the reader on your own device. Do not send it in chat. Open the edition, try the archive selector and Refresh, then Lock reader. Safari Share → Add to Home Screen is optional; this is an online reader without offline storage.
+Unlock verifies the private repository and pins four JSON reads to one commit. Home, sections, search, article and archive views work within the page without navigating away and losing the session. Reload or reopening a deep link requires reauthentication. Hash URLs contain only article IDs. Article titles, body and sources are rendered through DOM text nodes, with HTTPS-only external source links and no referrer.
 
-This version uses manual GitHub token authentication, not a one-click OAuth login. GitHub's documented OAuth authorization-code exchange requires a client secret. A future GitHub App sign-in would need separately configured server-side token exchange; no client secret belongs in this shell. The ChatGPT GitHub connection does not sign Safari in.
+Lock, page departure, backgrounding and 15 minutes of inactivity clear private content and the token; pending requests cannot restore it. Screenshots, clipboard, browser extensions and compromised same-origin hosting are outside this protection. Protect write access to the public repository.
 
-## Security boundaries
+## Regression checks
 
-The browser sends GET requests only to the fixed api.github.com repository endpoint. Each load verifies the repository is private, resolves one commit SHA, and reads latest/archive, task state and archive index at that same revision. Tokens remain in a closure and never enter URLs, storage or logs. Inputs are cleared immediately. Fetch uses no-store, no cookies and rejects redirects. No analytics, remote fonts/images, service worker or third-party script. Article text uses textContent, and source links allow HTTPS only with no referrer. Lock, reload, page departure, backgrounding or 15 minutes without activity clear the DOM/session; pending requests cannot repopulate a locked reader. Device screenshots, clipboard, extensions and compromised same-origin hosting remain outside this protection. Protect repository write access and review shell changes before using a token. Use this origin only for trusted Pages applications.
-
-Tasks are read-only in the reader; maintain tasks.json in the private repository. Archive views intentionally show current priorities. All edition data uses schemaVersion 1. Do not treat this initialization edition as researched news. Daily automation is intentionally not enabled.
-
-## Manual acceptance checks
-
-1. Open in a fresh Safari tab: no article/task data or authenticated API calls before unlock.
-2. Invalid, expired or wrong-repository token: clear error; no content displayed.
-3. Correct read-only token: setup edition, priorities and dated archive render.
-4. Refresh and switch archive; lock during a pending load: content must stay cleared.
-5. Background, reload or lock: access must be re-entered; no storage/cache entry created by app.
-6. Check Safari network: content requests go directly to api.github.com; token only in Authorization header.
-7. Without GitHub authentication, private repository/data endpoints return 404.
-
-References: https://docs.github.com/en/rest/using-the-rest-api/using-cors-and-jsonp-to-make-cross-origin-requests and https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+Verify empty startup, invalid-token feedback, private-repository refusal, valid content load, all section counts, search/no-results, article/back navigation, archive/latest switching, refresh, malformed content, unsafe source rejection, lock during a pending request, reload and background cleanup. Test iPad portrait and narrow phone layouts. Real valid-token verification must be performed on the user's device; never ask them to send a token in chat.
