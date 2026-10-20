@@ -2,6 +2,11 @@
 (() => {
  const $=id=>document.getElementById(id);
  const API='https://api.github.com/repos/vipsraval/RI_PRV_NWS_LTR';
+ const SAVED_TOKEN_KEY='raval-intelligent.read-token', IDLE_MS=60*60*1000;
+ let lastActivity=0;
+ function savedToken(){try{return localStorage.getItem(SAVED_TOKEN_KEY)||'';}catch{return '';}}
+ function forgetToken(){try{localStorage.removeItem(SAVED_TOKEN_KEY);}catch{} $('remember-token').checked=false;$('forget-token').hidden=true;}
+ function restoreToken(){const saved=savedToken();$('token').value=saved;$('remember-token').checked=!!saved;$('forget-token').hidden=!saved;}
  const sections={news:'AI News',engineering:'AI Engineering',aws:'AWS',interview:'Interview Prep'};
  const descriptions={news:'New launches, emerging ideas and research. Each story carries its source date.',engineering:'Essential AI concepts for senior developers. A lasting reference, expanded on request.',aws:'30 service guides: what they do, where to use them and what to watch for.',interview:'Java full-stack fundamentals, practical examples and questions to answer with confidence.'};
  let token='',state=null,controller=null,generation=0,idleTimer=null,archiveDate='';
@@ -14,11 +19,13 @@
    generation++;controller?.abort();controller=null;token='';state=null;archiveDate='';clearTimeout(idleTimer);
    $('token').value='';$('token').type='password';$('show-token').textContent='Show';$('show-token').setAttribute('aria-pressed','false');
    $('reader').hidden=true;$('signin').hidden=false;for(const id of ['content','tabs','footer-brand','heading-date','edition-info'])$(id).replaceChildren();
-   $('search').value='';document.title='Raval Intelligent';busy(false);status(message);
+   $('search').value='';document.title='Raval Intelligent';busy(false);restoreToken();status(message);
  }
- function touch(){clearTimeout(idleTimer);if(token)idleTimer=setTimeout(()=>lock('Locked after 15 minutes without activity.'),900000);}
+ function checkIdle(){if(token&&Date.now()-lastActivity>=IDLE_MS){lock('Locked after 60 minutes without activity.');return true;}return false;}
+ function touch(){if(checkIdle())return;clearTimeout(idleTimer);if(token){lastActivity=Date.now();idleTimer=setTimeout(checkIdle,IDLE_MS);}}
  async function api(path,signal){
    const r=await fetch(API+path,{headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},cache:'no-store',credentials:'omit',redirect:'error',signal});
+   if(r.status===401)forgetToken();
    if(!r.ok)throw new Error(r.status===401?'Token expired or invalid. Check your read-only token.':r.status===404?'Repository or file unavailable. Select RI_PRV_NWS_LTR and Contents: Read-only.':r.status===403||r.status===429?'GitHub denied access or its request limit was reached. Check permissions or try later.':'GitHub is unavailable. Please try again.');
    const raw=await r.text();if(raw.length>2000000)throw new Error('The content file is too large.');return JSON.parse(raw);
  }
@@ -85,16 +92,19 @@
      const d=new Date(news.date+'T12:00:00Z');if(Number.isNaN(d.getTime()))throw new Error('Invalid edition date.');$('heading-date').textContent=new Intl.DateTimeFormat('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(d);
      $('edition-info').textContent=(date?'Archive · ':'Latest edition · ')+news.date+' · '+library.articles.length+' library articles';
      $('tabs').replaceChildren(link('Home','#home'),...Object.entries(sections).map(([k,v])=>link(v,'#section/'+k)),link('Archive','#archive'));
-     $('signin').hidden=true;$('reader').hidden=false;$('token').value='';$('token').type='password';$('show-token').textContent='Show';$('show-token').setAttribute('aria-pressed','false');status('');touch();
+     $('signin').hidden=true;$('reader').hidden=false;$('token').value='';$('token').type='password';$('show-token').textContent='Show';$('show-token').setAttribute('aria-pressed','false');status('');lastActivity=Date.now();touch();
+     if($('remember-token').checked){try{localStorage.setItem(SAVED_TOKEN_KEY,token);$('forget-token').hidden=false;}catch{status('Opened, but this browser could not save the token.');}}
      if(location.hash==='#archive'){location.hash='#section/news';}route(true);
    }catch(err){if(ticket===generation)lock(err.name==='AbortError'?'Connection timed out. Please try again.':err instanceof SyntaxError?'A content file has invalid JSON.':err instanceof TypeError?'Could not connect or read content. Check the network and try again.':err.message);}
    finally{clearTimeout(timeout);if(ticket===generation)busy(false);}
  }
  $('login-form').addEventListener('submit',e=>{e.preventDefault();token=$('token').value.trim();$('token').value='';if(!token){status('Paste your read-only token first.');return;}load();});
+ $('remember-token').addEventListener('change',()=>{if(!$('remember-token').checked)forgetToken();});
+ $('forget-token').addEventListener('click',()=>{forgetToken();$('token').value='';status('Saved token removed from this browser.');});
  $('show-token').addEventListener('click',()=>{const show=$('token').type==='password';$('token').type=show?'text':'password';$('show-token').textContent=show?'Hide':'Show';$('show-token').setAttribute('aria-pressed',String(show));});
  $('lock').addEventListener('click',()=>lock());$('refresh').addEventListener('click',()=>load(archiveDate?'news/archive/'+archiveDate+'.json':'news/latest.json',archiveDate));
  $('search').addEventListener('input',()=>route());window.addEventListener('hashchange',()=>{if(state){$('search').value='';route(true);}});
  for(const ev of ['pointerdown','keydown','scroll'])document.addEventListener(ev,touch,{passive:true});
- window.addEventListener('pagehide',()=>lock());window.addEventListener('pageshow',e=>{if(e.persisted)lock();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&token)lock('Reader locked while away. Enter your token to continue.');});
- busy(false);status('Ready. Your content loads directly from your private repository.');
+ window.addEventListener('pagehide',()=>lock());window.addEventListener('pageshow',e=>{if(e.persisted)lock();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkIdle();});
+ restoreToken();busy(false);status('Ready. Your content loads directly from your private repository.');
 })();
