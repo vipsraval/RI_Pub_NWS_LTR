@@ -55,6 +55,7 @@
  function group(title,key,limit=4,cls=''){const wrap=node('div');const h=node('div','', 'tile-heading '+cls);h.append(node('span',title),link('View all →','#section/'+key));wrap.append(h);for(const a of all().filter(a=>a.section===key).slice(0,limit))wrap.append(card(a));return wrap;}
  function home(){
    const out=$('content');out.append(heading('Today’s reading room','#section/news','Explore AI news →'));
+   const featured=state.library.articles.filter(a=>a.featured===true);if(featured.length){const shelf=node('section','','featured-library');shelf.append(node('h2','Static learning library'));for(const a of featured)shelf.append(card(a));out.append(shelf);}
    const cols=node('div','','home-columns'),left=node('section','','home-column'),middle=node('section','','home-column'),right=node('aside','','home-column');
    const news=state.news.articles;for(let i=0;i<news.length;i++)left.append(card(news[i],i===0));if(!news.length)left.append(node('p','No news stories in this edition.'));
    left.append(node('p',state.portal.newsNotice,'edition-note'));
