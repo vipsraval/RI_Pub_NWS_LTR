@@ -93,7 +93,7 @@
      state={portal,library,news,index};archiveDate=date;$('publication-title').textContent=portal.title;$('footer-brand').textContent=portal.footer;
      const d=new Date(news.date+'T12:00:00Z');if(Number.isNaN(d.getTime()))throw new Error('Invalid edition date.');updateToday();
      $('edition-info').textContent=(date?'Archive · ':'Latest edition · ')+news.date+' · '+library.articles.length+' library articles';
-     $('tabs').replaceChildren(link('Home','#home'),...Object.entries(sections).map(([k,v])=>link(v,'#section/'+k)),link('Archive','#archive'));
+     $('tabs').replaceChildren(link('Home','#home'),...Object.entries(sections).map(([k,v])=>link(v,'#section/'+k)),...(index.editions.length?[link('Archive','#archive')]:[]));
      $('signin').hidden=true;$('reader').hidden=false;$('token').value='';$('token').type='password';$('show-token').textContent='Show';$('show-token').setAttribute('aria-pressed','false');status('');lastActivity=Date.now();touch();
      if($('remember-token').checked){try{localStorage.setItem(SAVED_TOKEN_KEY,token);$('forget-token').hidden=false;}catch{status('Opened, but this browser could not save the token.');}}
      if(location.hash==='#archive'){location.hash='#section/news';}route(true);
