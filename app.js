@@ -13,6 +13,7 @@
  const node=(tag,value='',className='')=>{const el=document.createElement(tag);el.textContent=value;if(className)el.className=className;return el;};
  const link=(label,href,cls='')=>{const el=node('a',label,cls);el.href=href;return el;};
  const short=(s,n=20000)=>typeof s==='string'&&s.length<=n;
+ function updateToday(){const today=new Intl.DateTimeFormat('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'America/Chicago'}).format(new Date());$('login-date').textContent=today;if(state)$('heading-date').textContent=today;}
  function status(message){$('login-status').textContent=message;$('reader-status').textContent=message;}
  function busy(on){$('open').disabled=on;$('open').textContent=on?'Opening…':'Open reading room →';$('refresh').disabled=on;}
  function lock(message='Reader locked. Enter your token to continue.'){
@@ -90,7 +91,7 @@
      const commit=await api('/commits/'+encodeURIComponent(repo.default_branch),current.signal);if(!/^[a-f0-9]{40}$/.test(commit.sha))throw new Error('Cannot verify content revision.');
      const [portal,library,news,index]=await Promise.all(['portal.json','library/catalog.json',path,'news/index.json'].map(p=>file(p,commit.sha,current.signal)));validate(portal,library,news,index);if(ticket!==generation)return;
      state={portal,library,news,index};archiveDate=date;$('publication-title').textContent=portal.title;$('footer-brand').textContent=portal.footer;
-     const d=new Date(news.date+'T12:00:00Z');if(Number.isNaN(d.getTime()))throw new Error('Invalid edition date.');$('heading-date').textContent=new Intl.DateTimeFormat('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(d);
+     const d=new Date(news.date+'T12:00:00Z');if(Number.isNaN(d.getTime()))throw new Error('Invalid edition date.');updateToday();
      $('edition-info').textContent=(date?'Archive · ':'Latest edition · ')+news.date+' · '+library.articles.length+' library articles';
      $('tabs').replaceChildren(link('Home','#home'),...Object.entries(sections).map(([k,v])=>link(v,'#section/'+k)),link('Archive','#archive'));
      $('signin').hidden=true;$('reader').hidden=false;$('token').value='';$('token').type='password';$('show-token').textContent='Show';$('show-token').setAttribute('aria-pressed','false');status('');lastActivity=Date.now();touch();
@@ -106,6 +107,7 @@
  $('lock').addEventListener('click',()=>lock());$('refresh').addEventListener('click',()=>load(archiveDate?'news/archive/'+archiveDate+'.json':'news/latest.json',archiveDate));
  $('search').addEventListener('input',()=>route());window.addEventListener('hashchange',()=>{if(state){$('search').value='';route(true);}});
  for(const ev of ['pointerdown','keydown','scroll'])document.addEventListener(ev,touch,{passive:true});
- window.addEventListener('pagehide',()=>lock());window.addEventListener('pageshow',e=>{if(e.persisted)lock();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkIdle();});
+ window.addEventListener('pagehide',()=>lock());window.addEventListener('pageshow',e=>{if(e.persisted)lock();});document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkIdle();updateToday();}});
+ updateToday();setInterval(updateToday,30000);
  restoreToken();busy(false);status('Ready. Your content loads directly from your private repository.');
 })();
