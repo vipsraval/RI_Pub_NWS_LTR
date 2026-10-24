@@ -7,8 +7,8 @@
  function savedToken(){try{return localStorage.getItem(SAVED_TOKEN_KEY)||'';}catch{return '';}}
  function forgetToken(){try{localStorage.removeItem(SAVED_TOKEN_KEY);}catch{} $('remember-token').checked=false;$('forget-token').hidden=true;}
  function restoreToken(){const saved=savedToken();$('token').value=saved;$('remember-token').checked=!!saved;$('forget-token').hidden=!saved;}
- const sections={works:'AI Works',learning:'AI Learning',aws:'AWS',interview:'Interview Preparation',static:'Static Learning Library'};
- const descriptions={works:'Practical ideas, experiments and implementation guides from your chats.',learning:'AI concepts and explanations, collected as you learn.',aws:'AWS services, architecture and practical learning notes.',interview:'Java, full-stack and AI interview preparation.',static:'Essential guides and lasting references to revisit anytime.'};
+ const sections={works:'AI Works',learning:'AI Learning',aws:'AWS',interview:'Interview Preparation',exam:'Current Exam',static:'Static Learning Library'};
+ const descriptions={works:'Practical ideas, experiments and implementation guides from your chats.',learning:'AI concepts and explanations, collected as you learn.',aws:'AWS services, architecture and practical learning notes.',interview:'Java, full-stack and AI interview preparation.',exam:'Focused notes and practice for your current exam preparation.',static:'Essential guides and lasting references to revisit anytime.'};
  let token='',state=null,controller=null,generation=0,idleTimer=null,archiveDate='';
  const node=(tag,value='',className='')=>{const el=document.createElement(tag);el.textContent=value;if(className)el.className=className;return el;};
  const link=(label,href,cls='')=>{const el=node('a',label,cls);el.href=href;return el;};
@@ -68,6 +68,7 @@
  }
  function validate(portal,library,staticLibrary){
    if(portal?.schemaVersion!==2||!short(portal.title,100)||!short(portal.footer,100)||!short(portal.libraryNotice,500))throw new Error('Unsupported reader configuration.');
+   if(portal.currentExam && !short(portal.currentExam.title,100))throw new Error('Invalid exam title.');
    validArticles(library);validArticles(staticLibrary);
    if(library.articles.some(a=>a.section==='static')||staticLibrary.articles.some(a=>a.section!=='static'))throw new Error('Invalid library section.');
    const ids=new Set([...library.articles,...staticLibrary.articles].map(a=>a.id));if(ids.size!==library.articles.length+staticLibrary.articles.length)throw new Error('Duplicate article IDs.');
@@ -112,6 +113,7 @@
      const repo=await api('',current.signal);if(repo.private!==true)throw new Error('Privacy check failed: the content repository must be private.');
      const commit=await api('/commits/'+encodeURIComponent(repo.default_branch),current.signal);if(!/^[a-f0-9]{40}$/.test(commit.sha))throw new Error('Cannot verify content revision.');
      const [portal,library,staticLibrary]=await Promise.all(['portal.json','content/catalog.json','library/static.json'].map(p=>file(p,commit.sha,current.signal)));validate(portal,library,staticLibrary);if(ticket!==generation)return;
+     sections.exam=portal.currentExam?.title||'Current Exam';
      state={portal,library:{articles:[...library.articles,...staticLibrary.articles]}};archiveDate='';$('publication-title').textContent=portal.title;$('footer-brand').textContent=portal.footer;updateToday();
      $('edition-info').textContent=all().length+' articles · Your personal learning library';
      $('tabs').replaceChildren(link('Home','#home'),...Object.entries(sections).map(([k,v])=>link(v,'#section/'+k)));
@@ -132,3 +134,4 @@
  updateToday();setInterval(updateToday,30000);
  restoreToken();busy(false);status('Ready. Your content loads directly from your private repository.');
 })();
+
